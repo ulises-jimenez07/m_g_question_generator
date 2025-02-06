@@ -1,11 +1,16 @@
 import gradio as gr 
-from google.cloud import storage
+# from google.cloud import storage
 
 
-def get_base_file():
-    return gr.File(file_count="single", label="Raw file")
+def get_base_file() -> gr.File:
+    return gr.File(file_count = "single",
+                   label = "CV in PDF format",
+                   file_types = [".pdf"],
+                   type = "filepath",
+                   show_label = True,
+                   )
 
-def get_base_markdown():
+def get_base_markdown() -> None:
     return gr.Markdown(
         f"""
         ```
@@ -19,9 +24,11 @@ def get_base_markdown():
         )
 
 
-def clean():
+def clean() -> None:
     return (
-        gr.File(file_count="single", label="Raw file"),
+        gr.File(file_count="single", 
+                label="CV in PDF format",
+                ),
         gr.Markdown(
         f"""
         ```
@@ -36,7 +43,7 @@ def clean():
     )
 
 
-def summarize_file(file):
+def summarize_file(cv_file) -> gr.Markdown:
     # TODO:
     # storage_client = storage.Client()
     # bucket = storage_client.bucket(bucket_name)
@@ -57,22 +64,35 @@ if __name__ == '__main__':
     with demo:
         gr.Markdown(
             f"""
-            # Convert2PDF: Demo
+            # M&G Q-Gen
+            Assistant for Meet & Greet question generation
             """
         )
         with gr.Row():
             with gr.Column():
-                file = get_base_file()
+                cv_file = get_base_file()
                 with gr.Row():
-                    btn_summarize = gr.Button(value="✨ Summarize", interactive=True)
-                    btn_clean = gr.Button(value="🗑️ Clean", interactive=True)
+                    ddn_domain = gr.Dropdown(
+                        choices = ["ML", "GenAI", "MLOps", "Conversational"],
+                        value = None,
+                        type = "value",
+                        max_choices = 1,
+                        label = "Domain",
+                        info = "Domain selection for question generation",
+                        # show_label = True,
+                        interactive = True,
+                    )
+
+                with gr.Row():
+                    btn_summarize = gr.Button(value="✨ Generate Questions!", interactive=True)
+                    btn_clean = gr.Button(value="🗑️ Clean Up!", interactive=True)
         
             with gr.Column(visible=True) as summary_result:
                 summary_markdown = get_base_markdown()
 
         btn_summarize.click(
             fn=summarize_file,
-            inputs=[file],
+            inputs=[cv_file],
             outputs=[summary_markdown]
         )
 
@@ -80,7 +100,7 @@ if __name__ == '__main__':
             fn=clean,
             inputs=[],
             outputs=[
-                file,
+                cv_file,
                 summary_markdown
             ]
         )
