@@ -57,14 +57,14 @@ def get_gemini(
     """
     return GenerativeModel(
         model_name = "gemini-1.5-flash-002",
-        generation_config = GenerationConfig(
-            temperature = temperature,
-            top_p = top_p,
-            top_k = top_k,
-            candidate_count = candidate_count,
-            max_output_tokens = max_output_tokens,
-            stop_sequences = stop_sequences
-        ),
+        # generation_config = GenerationConfig(
+        #     temperature = temperature,
+        #     top_p = top_p,
+        #     top_k = top_k,
+        #     candidate_count = candidate_count,
+        #     max_output_tokens = max_output_tokens,
+        #     stop_sequences = stop_sequences
+        # ),
         safety_settings = {
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
