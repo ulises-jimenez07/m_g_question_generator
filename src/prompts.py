@@ -3,17 +3,12 @@
 system_prompt = """
 ***System Instructions: ***
 
-You are a Human Resources expert, in charge of extracting information from CV's and resumes, and then.
+You are a Human Resources expert, in charge of extracting information from CV's
+and resumes, and then generating questions about a candidate's past experience.
 
-When extracting information from a PDF, your task is to generate a data structure that strictly adheres to the following characteristics and instructions:
-The output must be in JSON format.
-In the case of the “lastDegreeOfStudies” field, include the area of study. For example: "Master's in Marketing".
-In the "location" field, only return the city and country where the candidate lives. For example, if the resume says: Guadalajara, Jalisco, Postal Code 44160, the string should only be: "Guadalajara, Jalisco".
-Consider “stack” as the combination of technologies (programming languages, frameworks, databases, tools, platforms, etc.) that are listed to build and maintain applications or systems.
-Consider “pastExperience” as the relevant past experience included in the resume. Use a dictionary structure to include the name of the company, area, role, start and end dates, and a brief summary of the activities performed during each experience 
-Consider “softSkills” are the person's abilities to work on their own or in a team. For example: communication, leadership, resistance to stress, logical mathematical reasoning, etc.
-
-When generating questions, the questions have to be relevant to the instructed prompt and as detailed as possible.
+When generating questions, the questions have to be relevant to the 
+instructed prompt and as detailed as possible. Focus less on hypothetical cases,
+the questions must be centered around the candidate's past experience instead.
 
 Begin!
 """
@@ -22,35 +17,48 @@ extract_prompt = """
 Extract the fields from the following list:
 
 location (String)
-currentRole (String)
-currentCompany (String)
-lastDegreeOfStudies (String)
+current_role (String)
+current_company (String)
+last_degree_Studies (String)
 certifications (Array of Strings)
-softSkills (Array of Strings)
-stack (Array of Strings)
-pastExperience (Array of Strings)
+soft_skills (Array of Strings)
+tech_stack (Array of Strings)
+past_experience (Array of Strings)
 """
 
 gen_exp_prompt = """
-Generate a question that asks the candidate to introduce themselves and talk about their experience using their previous roles as reference, and framed around the following domain: {domain} 
+Generate a question that asks the candidate to introduce themselves and talk
+about their previous experience at {company}, 
+the question must be framed around the following domain: {domain} 
 """
 
 gen_stack_prompt = """
-Generate a question that asks the candidate about how they solved particular challenges during their work experience using any of the following tools: {tool}. Also ask if they have any preferences for these tools.
+Generate a question that asks the candidate about how they solved a particular 
+challenge as a {role} using the following tool: {tool}. 
+The question must ask for specifics in terms of implementation and preference.
 """
 
 gen_industry_prompt = """
-Generate a question that asks the candidate about how they would apply {domain} domain knowladge in the {industry} industry.
+Generate a question that asks the candidate about how they would apply {domain} 
+knowledge in the {industry} industry.
 """
 
 gen_data_prompt = """
-Generate a single question that asks the candidate about how they applied Exploratory Data Analysis based on their previous work experience at {company}.
+Generate a single question that asks the candidate about how they would apply 
+Exploratory Data Analysis as a {role} at {company}.
 """
 
 gen_genai_prompt = """
-Generate a question that asks the candidate about general knowledge on Generative AI, and a second question on common troubleshooting
+Generate first a question that asks the candidate about general knowledge on 
+Generative AI. Then, generate a second question on common troubleshooting.
 """
 
 gen_consulting_prompt = """
-Generate two questions that asks the candidate about their soft skills in a consultative role, such as working with cross-functional teams, creating visualizations for clarity purposes, presenting to key stakeholders, or preferences on working with other team members.
+Generate two questions that asks the candidate about how they have applied the
+following soft skills: {skills} at {company}. These two questions must focus on a  
+consultative environment and can use any of the following tasks as a reference:
+- working in cross-functional teams, 
+- creating visualizations for clarity purposes
+- presenting to key stakeholders, 
+- preferences on working with other team members.
 """

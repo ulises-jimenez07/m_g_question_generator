@@ -29,7 +29,7 @@ response_schema = {
         },
         "last_degree_studies": {
             "type": "string",
-            "description": "REQUIRED! The degree of the latest studies completed by the candidate."
+            "description": "REQUIRED! The degree of the latest studies completed by the candidate, including area of study."
         },
         "certifications": {
             "type": "array",
@@ -60,6 +60,9 @@ response_schema = {
         },
         "past_experience": {
             "type": "array",
+            # Consider “pastExperience” as the relevant 
+            # past experience included in the resume. Use a dictionary structure to include the name of the company, 
+            # area, role, start and end dates, and a brief summary of the activities performed during each experience 
             "description": "List of activities performed by the candidate during their last work experience. Provide at least 2.",
             "items": {
                 "type": "string",

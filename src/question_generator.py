@@ -35,9 +35,9 @@ class QuestionGenerator:
     Attributes:
             resume_schema: Function calling tool.
     """
-    def __init__(self):
+    def __init__(self, use_ds=False):
         self.resume_schema = [response_schema]
-
+        self.use_ds = use_ds
 
     def call_system_model(self,
                         #   prompt: str,
@@ -76,12 +76,11 @@ class QuestionGenerator:
         """
         return get_gemini(
             # prompt=prompt,
-            # system_instruction=self.get_÷system_context(),
+            system_instruction=self.get_system_context(),
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
             max_output_tokens=max_output_tokens,
-            # tools=self.resume_schema,
             **kwargs,
             )
 
@@ -126,7 +125,7 @@ class QuestionGenerator:
     
 
     def generate_single_question(self, model, prompt):
-        logger.info("Prompt: ", prompt)
+        logger.debug(f"Prompt: {prompt}")
         response = model.generate_content(prompt)
         return response.text
 
@@ -141,21 +140,29 @@ class QuestionGenerator:
             model=model
             )
         json_extracted = json.loads(extracted_text)
-        logger.info("extracted text: ", extracted_text)
-        print("extracted text: ", extracted_text)
+        json_formatted_str = json.dumps(json_extracted, indent=2)
+        logger.info(f"Extracted JSON: {json_formatted_str}")
 
         questions = {}
         # Introductory previous experience question
         questions["experience"] = self.generate_single_question(
             model, 
-            gen_exp_prompt.format(domain=DOMAIN)
+            gen_exp_prompt.format(
+                company=json_extracted["current_company"],
+                domain=DOMAIN
+                )
             )
         
         # Stack question
+        # TODO modify to have a more precise selection of stack tool,
+        # thinking of making another gemini call that selects one of the tools
+        # from the generated list based on domain and current_role
         tool = random.choice(json_extracted["tech_stack"])
         questions["stack"] = self.generate_single_question(
             model, 
-            gen_stack_prompt.format(tool=tool)
+            gen_stack_prompt.format(
+                role=json_extracted["current_role"],
+                tool=tool)
             )
         
         # (Optional) Industry-specific question
@@ -171,19 +178,25 @@ class QuestionGenerator:
         # EDA question
         questions["data"] = self.generate_single_question(
             model, 
-            gen_data_prompt.format(company=json_extracted["current_company"])
+            gen_data_prompt.format(
+                role=json_extracted["current_role"],
+                company=json_extracted["current_company"]
+                )
             )
         
-        # EDA question
+        # GenAI question
         questions["genai"] = self.generate_single_question(
-            model, 
-            gen_genai_prompt.format(company=json_extracted["current_company"])
+            model,
+            gen_genai_prompt
             )
         
         # Consulting question
         questions["consulting"] = self.generate_single_question(
             model, 
-            gen_consulting_prompt.format(company=json_extracted["current_company"])
+            gen_consulting_prompt.format(
+                skills=json_extracted["soft_skills"],
+                company=json_extracted["current_company"]
+                )
             )        
 
         return questions
