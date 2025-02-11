@@ -1,4 +1,4 @@
-"""M&G Q-Gen Logger"""
+"""Initialize the application."""
 
 import logging
 import logging.config
@@ -20,4 +20,4 @@ logger = logging.getLogger("logger")
 
 # # Add the Handler to the Logger
 # logger.addHandler(logger_handler)
-# logger.info('Completed configuring logger()!') 
+# logger.info('Completed configuring logger()!')
