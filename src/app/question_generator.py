@@ -4,19 +4,22 @@ import json
 import random
 from typing import Optional
 
-import logger
-import response_schema
 import vertexai
-from gemini import get_gemini
+from gemini import (
+    GeminiConfig,
+    get_gemini,
+)
+from gemini_schema import response_schema
+from logging_utils import logger
 from prompts import (
-    extract_prompt,
-    gen_consulting_prompt,
-    gen_data_prompt,
-    gen_exp_prompt,
-    gen_genai_prompt,
-    gen_industry_prompt,
-    gen_stack_prompt,
-    system_prompt,
+    EXTRACT_PROMPT,
+    GEN_CONSULTING_PROMPT,
+    GEN_DATA_PROMPT,
+    GEN_EXP_PROMPT,
+    GEN_GENAI_PROMPT,
+    GEN_INDUSTRY_PROMPT,
+    GEN_STACK_PROMPT,
+    SYSTEM_PROMPT,
 )
 from vertexai.preview.generative_models import (
     GenerationConfig,
@@ -25,22 +28,25 @@ from vertexai.preview.generative_models import (
 
 vertexai.init(project="gsd-ai-mx-ulises", location="us-central1")
 
-DOMAIN = "MLOPS"
+
 INDUSTRY = None
 
 
-class QuestionGenerator:
-    """QuestionGenerator class.
+class SystemContext:
+    """Handles system context."""
 
-    Attributes:
-            resume_schema: Function calling tool.
-    """
+    def get_system_context(self) -> str:
+        """System model prompt."""
+        return SYSTEM_PROMPT
 
-    def __init__(self, use_ds=False):
-        self.resume_schema = [response_schema]
-        self.use_ds = use_ds
 
-    def call_system_model(
+class GeminiModel:
+    """Handles Gemini model interactions."""
+
+    def __init__(self, system_context: SystemContext):
+        self.system_context = system_context
+
+    def call_model(
         self,
         max_output_tokens: Optional[int] = 3000,
         temperature: Optional[float] = 0.5,
@@ -48,101 +54,114 @@ class QuestionGenerator:
         top_k: Optional[int] = 40,
         **kwargs,
     ):
-        """
-        Makes a Gemini model call with system context.
-
-        Args:
-            max_output_tokens: The maximum number of tokens to generate.
-            temperature: Controls the randomness of the generated text.
-            top_p: Implements nucleus sampling.
-            top_k: Controls the vocabulary size considered for generation.
-
-        Returns:
-            A call to a Gemini model using GenAI API.
-        """
-        return get_gemini(
-            system_instruction=self.get_system_context(),
+        """Makes a Gemini model call."""
+        config = GeminiConfig(
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
             max_output_tokens=max_output_tokens,
+            system_instruction=self.system_context.get_system_context(),
             **kwargs,
         )
+        return get_gemini(config)
 
-    def get_system_context(self) -> str:
-        """System model prompt."""
-        return system_prompt
+    def generate_content(self, model, prompt, generation_config=None):
+        """Generates content using the Gemini model."""
+        if generation_config:
+            response = model.generate_content(prompt, generation_config=generation_config)
+        else:
+            response = model.generate_content(prompt)
+        return response.text
 
-    def extract_pdf(self, model):
+
+class PdfExtractor:
+    """Extracts information from a PDF."""
+
+    def __init__(self, model: GeminiModel, pdf_path: str):
+        self.model = model
+        self.pdf_path = pdf_path
+
+    def extract_pdf(self):
         """PDF info extraction."""
-
-        prompt = extract_prompt
-        pdf_file = Part.from_uri(
-            uri="gs://mg-questions-bucket/cv_test/cv_1.pdf",
-            mime_type="application/pdf",
-        )
+        prompt = EXTRACT_PROMPT
+        if self.pdf_path.startswith("gs://"):
+            pdf_file = Part.from_uri(
+                uri=self.pdf_path,
+                mime_type="application/pdf",
+            )
+        else:
+            try:
+                with open(self.pdf_path, "rb") as f:
+                    pdf_file = Part.from_data(data=f.read(), mime_type="application/pdf")
+            except FileNotFoundError:
+                logger.error(f"File not found: {self.pdf_path}")
+                return None
+            except PermissionError:
+                logger.error(f"Permission error accessing file: {self.pdf_path}")
+                return None
+            except OSError as e:  # Catching a more specific exception.
+                logger.error(f"OS error reading file: {e}")
+                return None
         contents = [pdf_file, prompt]
         config = GenerationConfig(response_mime_type="application/json", response_schema=response_schema)
+        return self.model.generate_content(self.model.call_model(), contents, generation_config=config)
 
-        response = model.generate_content(contents, generation_config=config)
-        return response.text
+    def parse_extracted_data(self, extracted_text):
+        """Parses extracted JSON data."""
+        json_extracted = json.loads(extracted_text)
+        return json_extracted
 
-    def generate_single_question(self, model, prompt):
+
+class QuestionGenerator:
+    """Generates interview questions."""
+
+    def __init__(self, model: GeminiModel, pdf_extractor: PdfExtractor, domain: str):  # Added domain parameter
+        self.model = model
+        self.pdf_extractor = pdf_extractor
+        self.domain = domain  # Store the domain
+
+    def generate_single_question(self, prompt):
+        """Generates a single question."""
         logger.debug(f"Prompt: {prompt}")
-        response = model.generate_content(prompt)
-        return response.text
+        return self.model.generate_content(self.model.call_model(), prompt)
 
     def generate_questions(self):
-        logger.info("Initializing Gemini model...")
-        model = self.call_system_model()
-
+        """Generates all interview questions."""
         logger.info("Extracting info from PDF...")
-        extracted_text = self.extract_pdf(model=model)
-        json_extracted = json.loads(extracted_text)
+        extracted_text = self.pdf_extractor.extract_pdf()
+
+        if extracted_text is None:  # added null check.
+            return {}
+
+        json_extracted = self.pdf_extractor.parse_extracted_data(extracted_text)
         json_formatted_str = json.dumps(json_extracted, indent=2)
         logger.info(f"Extracted JSON: {json_formatted_str}")
 
         questions = {}
-        # Introductory previous experience question
         questions["experience"] = self.generate_single_question(
-            model, gen_exp_prompt.format(company=json_extracted["current_company"], domain=DOMAIN)
+            GEN_EXP_PROMPT.format(company=json_extracted["current_company"], domain=self.domain)  # Use self.domain
         )
 
-        # Stack question -  TODO: Implement more precise stack tool selection
         tool = random.choice(json_extracted["tech_stack"])
         questions["stack"] = self.generate_single_question(
-            model, gen_stack_prompt.format(role=json_extracted["current_role"], tool=tool)
+            GEN_STACK_PROMPT.format(role=json_extracted["current_role"], tool=tool)
         )
 
-        # (Optional) Industry-specific question
         if INDUSTRY:
             questions["industry"] = self.generate_single_question(
-                model, gen_industry_prompt.format(domain=DOMAIN, industry=INDUSTRY)
+                GEN_INDUSTRY_PROMPT.format(domain=self.domain, industry=INDUSTRY)
             )
 
-        # EDA question
         questions["data"] = self.generate_single_question(
-            model,
-            gen_data_prompt.format(role=json_extracted["current_role"], company=json_extracted["current_company"]),
+            GEN_DATA_PROMPT.format(role=json_extracted["current_role"], company=json_extracted["current_company"])
         )
 
-        # GenAI question
-        questions["genai"] = self.generate_single_question(model, gen_genai_prompt)
+        questions["genai"] = self.generate_single_question(GEN_GENAI_PROMPT)
 
-        # Consulting question
         questions["consulting"] = self.generate_single_question(
-            model,
-            gen_consulting_prompt.format(
+            GEN_CONSULTING_PROMPT.format(
                 skills=json_extracted["soft_skills"], company=json_extracted["current_company"]
-            ),
+            )
         )
 
         return questions
-
-
-if __name__ == "__main__":
-    q_generator = QuestionGenerator()
-    questions = q_generator.generate_questions()
-    print("Generated questions: \n")
-    for question_type, question_text in questions.items():  # Iterate using .items()
-        print(f"Question {question_type}: {question_text} \n")
