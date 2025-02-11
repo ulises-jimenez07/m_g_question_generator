@@ -28,7 +28,7 @@ from vertexai.preview.generative_models import (
 
 vertexai.init(project="gsd-ai-mx-ulises", location="us-central1")
 
-DOMAIN = "MLOPS"
+
 INDUSTRY = None
 
 
@@ -115,9 +115,10 @@ class PdfExtractor:
 class QuestionGenerator:
     """Generates interview questions."""
 
-    def __init__(self, model: GeminiModel, pdf_extractor: PdfExtractor):
+    def __init__(self, model: GeminiModel, pdf_extractor: PdfExtractor, domain: str):  # Added domain parameter
         self.model = model
         self.pdf_extractor = pdf_extractor
+        self.domain = domain  # Store the domain
 
     def generate_single_question(self, prompt):
         """Generates a single question."""
@@ -138,7 +139,7 @@ class QuestionGenerator:
 
         questions = {}
         questions["experience"] = self.generate_single_question(
-            GEN_EXP_PROMPT.format(company=json_extracted["current_company"], domain=DOMAIN)
+            GEN_EXP_PROMPT.format(company=json_extracted["current_company"], domain=self.domain)  # Use self.domain
         )
 
         tool = random.choice(json_extracted["tech_stack"])
@@ -148,7 +149,7 @@ class QuestionGenerator:
 
         if INDUSTRY:
             questions["industry"] = self.generate_single_question(
-                GEN_INDUSTRY_PROMPT.format(domain=DOMAIN, industry=INDUSTRY)
+                GEN_INDUSTRY_PROMPT.format(domain=self.domain, industry=INDUSTRY)
             )
 
         questions["data"] = self.generate_single_question(
@@ -164,15 +165,3 @@ class QuestionGenerator:
         )
 
         return questions
-
-
-if __name__ == "__main__":
-    system_context = SystemContext()
-    model = GeminiModel(system_context)
-    PDF_PATH = "gs://mg-questions-bucket/cv_test/cv_1.pdf"  # or a local path like "./local_cv.pdf"
-    pdf_extractor = PdfExtractor(model, PDF_PATH)
-    q_generator = QuestionGenerator(model, pdf_extractor)
-    questions = q_generator.generate_questions()
-    print("Generated questions: \n")
-    for question_type, question_text in questions.items():
-        print(f"Question {question_type}: {question_text} \n")
