@@ -4,19 +4,22 @@ import json
 import random
 from typing import Optional
 
-import logger
-import response_schema
 import vertexai
-from gemini import get_gemini
+from gemini import (
+    GeminiConfig,
+    get_gemini,
+)
+from gemini_schema import response_schema
+from logging_utils import logger
 from prompts import (
-    extract_prompt,
-    gen_consulting_prompt,
-    gen_data_prompt,
-    gen_exp_prompt,
-    gen_genai_prompt,
-    gen_industry_prompt,
-    gen_stack_prompt,
-    system_prompt,
+    EXTRACT_PROMPT,
+    GEN_CONSULTING_PROMPT,
+    GEN_DATA_PROMPT,
+    GEN_EXP_PROMPT,
+    GEN_GENAI_PROMPT,
+    GEN_INDUSTRY_PROMPT,
+    GEN_STACK_PROMPT,
+    SYSTEM_PROMPT,
 )
 from vertexai.preview.generative_models import (
     GenerationConfig,
@@ -60,23 +63,24 @@ class QuestionGenerator:
         Returns:
             A call to a Gemini model using GenAI API.
         """
-        return get_gemini(
-            system_instruction=self.get_system_context(),
+        config = GeminiConfig(
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
             max_output_tokens=max_output_tokens,
-            **kwargs,
+            system_instruction=self.get_system_context(),
+            **kwargs,  # Pass any additional kwargs to GeminiConfig
         )
+        return get_gemini(config)
 
     def get_system_context(self) -> str:
         """System model prompt."""
-        return system_prompt
+        return SYSTEM_PROMPT
 
     def extract_pdf(self, model):
         """PDF info extraction."""
 
-        prompt = extract_prompt
+        prompt = EXTRACT_PROMPT
         pdf_file = Part.from_uri(
             uri="gs://mg-questions-bucket/cv_test/cv_1.pdf",
             mime_type="application/pdf",
@@ -105,34 +109,34 @@ class QuestionGenerator:
         questions = {}
         # Introductory previous experience question
         questions["experience"] = self.generate_single_question(
-            model, gen_exp_prompt.format(company=json_extracted["current_company"], domain=DOMAIN)
+            model, GEN_EXP_PROMPT.format(company=json_extracted["current_company"], domain=DOMAIN)
         )
 
         # Stack question -  TODO: Implement more precise stack tool selection
         tool = random.choice(json_extracted["tech_stack"])
         questions["stack"] = self.generate_single_question(
-            model, gen_stack_prompt.format(role=json_extracted["current_role"], tool=tool)
+            model, GEN_STACK_PROMPT.format(role=json_extracted["current_role"], tool=tool)
         )
 
         # (Optional) Industry-specific question
         if INDUSTRY:
             questions["industry"] = self.generate_single_question(
-                model, gen_industry_prompt.format(domain=DOMAIN, industry=INDUSTRY)
+                model, GEN_INDUSTRY_PROMPT.format(domain=DOMAIN, industry=INDUSTRY)
             )
 
         # EDA question
         questions["data"] = self.generate_single_question(
             model,
-            gen_data_prompt.format(role=json_extracted["current_role"], company=json_extracted["current_company"]),
+            GEN_DATA_PROMPT.format(role=json_extracted["current_role"], company=json_extracted["current_company"]),
         )
 
         # GenAI question
-        questions["genai"] = self.generate_single_question(model, gen_genai_prompt)
+        questions["genai"] = self.generate_single_question(model, GEN_GENAI_PROMPT)
 
         # Consulting question
         questions["consulting"] = self.generate_single_question(
             model,
-            gen_consulting_prompt.format(
+            GEN_CONSULTING_PROMPT.format(
                 skills=json_extracted["soft_skills"], company=json_extracted["current_company"]
             ),
         )
