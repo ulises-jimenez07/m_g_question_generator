@@ -77,16 +77,31 @@ class GeminiModel:
 class PdfExtractor:
     """Extracts information from a PDF."""
 
-    def __init__(self, model: GeminiModel):
+    def __init__(self, model: GeminiModel, pdf_path: str):
         self.model = model
+        self.pdf_path = pdf_path
 
     def extract_pdf(self):
         """PDF info extraction."""
         prompt = EXTRACT_PROMPT
-        pdf_file = Part.from_uri(
-            uri="gs://mg-questions-bucket/cv_test/cv_1.pdf",
-            mime_type="application/pdf",
-        )
+        if self.pdf_path.startswith("gs://"):
+            pdf_file = Part.from_uri(
+                uri=self.pdf_path,
+                mime_type="application/pdf",
+            )
+        else:
+            try:
+                with open(self.pdf_path, "rb") as f:
+                    pdf_file = Part.from_data(data=f.read(), mime_type="application/pdf")
+            except FileNotFoundError:
+                logger.error(f"File not found: {self.pdf_path}")
+                return None
+            except PermissionError:
+                logger.error(f"Permission error accessing file: {self.pdf_path}")
+                return None
+            except OSError as e:  # Catching a more specific exception.
+                logger.error(f"OS error reading file: {e}")
+                return None
         contents = [pdf_file, prompt]
         config = GenerationConfig(response_mime_type="application/json", response_schema=response_schema)
         return self.model.generate_content(self.model.call_model(), contents, generation_config=config)
@@ -113,6 +128,10 @@ class QuestionGenerator:
         """Generates all interview questions."""
         logger.info("Extracting info from PDF...")
         extracted_text = self.pdf_extractor.extract_pdf()
+
+        if extracted_text is None:  # added null check.
+            return {}
+
         json_extracted = self.pdf_extractor.parse_extracted_data(extracted_text)
         json_formatted_str = json.dumps(json_extracted, indent=2)
         logger.info(f"Extracted JSON: {json_formatted_str}")
@@ -150,7 +169,8 @@ class QuestionGenerator:
 if __name__ == "__main__":
     system_context = SystemContext()
     model = GeminiModel(system_context)
-    pdf_extractor = PdfExtractor(model)
+    PDF_PATH = "gs://mg-questions-bucket/cv_test/cv_1.pdf"  # or a local path like "./local_cv.pdf"
+    pdf_extractor = PdfExtractor(model, PDF_PATH)
     q_generator = QuestionGenerator(model, pdf_extractor)
     questions = q_generator.generate_questions()
     print("Generated questions: \n")
