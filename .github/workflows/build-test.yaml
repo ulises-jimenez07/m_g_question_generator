@@ -48,4 +48,4 @@ jobs:
 
       - name: Run tests
         working-directory: src/app # cd into src/app
-        run: pytest ../../tests/test_question_generator.py
+        run: pytest
