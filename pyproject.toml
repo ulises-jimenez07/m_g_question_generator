@@ -20,7 +20,12 @@ dev = [
     "isort",
     "autoflake"
 ]
-test = ["pytest", "pytest-mock"]
+test = [
+    "pytest",
+    "pytest-mock",
+    "vertexai",
+    "google-cloud-aiplatform"
+    ]
 
 [tool.pytest.ini_options]
 pythonpath = [
