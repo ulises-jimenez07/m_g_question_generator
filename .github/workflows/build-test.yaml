@@ -42,10 +42,5 @@ jobs:
       - name: Install dependencies
         run: pip install -e .[test]
 
-      - name: Change to app directory  # NEW STEP
-        working-directory: src/app # cd into src/app
-        run: pwd # to print current path as a check
-
       - name: Run tests
-        working-directory: src/app # cd into src/app
         run: pytest

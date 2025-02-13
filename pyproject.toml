@@ -29,8 +29,7 @@ test = [
 
 [tool.pytest.ini_options]
 pythonpath = [
-    ".",
-    "src/app" #  Tell pytest to include src in the python path
+    "src" #  Tell pytest to include src in the python path
 ]
 
 [tool.black]
