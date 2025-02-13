@@ -1,0 +1,28 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '.' ]
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA' ]
+
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'mg-questions' # Image name, from the script's $1
+  - '--image'
+  - 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA'
+  - '--platform'
+  - 'managed'
+  - '--region'
+  - 'us-central1' # Region, from the script's $2
+  - '--port'
+  - '8080' # Port from the script
+  - '--allow-unauthenticated'
+
+images:
+- 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

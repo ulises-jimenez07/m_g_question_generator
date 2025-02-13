@@ -1,4 +1,10 @@
-from utils import create_data_store, import_documents, create_engine
+"""This script creates a Vertex AI Datastore and imports documents from GCS."""
+
+from utils import (
+    create_data_store,
+    create_engine,
+    import_documents,
+)
 
 PROJECT_ID = ""
 LOCATION = "global"

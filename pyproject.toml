@@ -1,0 +1,57 @@
+[project]
+name = "MG_questions_generator"
+authors = [{ name = "Ulises Jimenez", email = "ulisesjimenez@google.com" },
+{ name = "Andres Toledo", email = "aatoledo@google.com" }]
+description = "Solution to create questions for a Meet and Greet"
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["gcp", "genAI"]
+license = { text = "Apache License" }
+classifiers = ["Programming Language :: Python :: 3"]
+dependencies = ["gradio"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "mypy",
+    "black",
+    "pylint",
+    "isort",
+    "autoflake"
+]
+test = [
+    "pytest",
+    "pytest-mock",
+    "vertexai",
+    "google-cloud-aiplatform"
+    ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "src",
+    "src/app"
+]
+
+[tool.black]
+line-length = 119
+
+[tool.isort]
+profile = "black"
+multi_line_output = "VERTICAL_HANGING_INDENT"
+force_grid_wrap = 2
+line_length = 119
+
+[tool.pylint.design]
+max-attributes = 10
+
+[tool.pylint."messages control"]
+disable = [
+    "line-too-long",
+    "trailing-whitespace",
+    "missing-function-docstring",
+    "consider-using-f-string",
+    "import-error",
+    "too-few-public-methods",
+    "redefined-outer-name",
+]

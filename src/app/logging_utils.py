@@ -1,4 +1,9 @@
-"""M&G Q-Gen Logger"""
+"""Provides a pre-configured logger instance.
+
+This module sets up a basic logger named "logger" with an INFO logging level.
+It can be directly imported and used in other modules.  Commented-out code
+shows an example of how to add a file handler and custom formatter if needed.
+"""
 
 import logging
 import logging.config
@@ -20,4 +25,4 @@ logger = logging.getLogger("logger")
 
 # # Add the Handler to the Logger
 # logger.addHandler(logger_handler)
-# logger.info('Completed configuring logger()!') 
+# logger.info('Completed configuring logger()!')
