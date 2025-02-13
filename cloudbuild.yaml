@@ -1,11 +1,11 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '-f', 'src/app/Dockerfile', '.' ]  # Added -f and path
-  dir: 'src/app' # Added dir
+  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '-f', 'src/app/Dockerfile', '.' ]
+  dir: 'src/app' # Set working directory to src/app
 
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA' ]
-
+  args: ['push', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA']
+  
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
   args:
