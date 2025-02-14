@@ -1,6 +1,6 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '.' ]
+  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '.', '-f', 'src/app/Dockerfile' ]
 
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'push', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA' ]
