@@ -177,7 +177,7 @@ class QuestionGenerator:
 
         # tool = random.choice(json_extracted["tech_stack"])
         logger.info("Selecting tool for questioning...")
-        tool = self.generate_single_question(
+        tool = self.select_tool(
             TOOL_SELECTION_PROMPT.format(
                 tools=json_extracted["tech_stack"], role=json_extracted["current_role"], domain=self.domain
             )
