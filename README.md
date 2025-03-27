@@ -72,8 +72,8 @@ The application is containerized using Docker and deployed to Google Cloud Run.
 ## Running Locally:
 
 1. Ensure you have Docker installed.
-2. Navigate to the `src/app` directory.
-3. Build the Docker image: `docker build -t mg-q-gen .`
+2. Navigate to the project root directory (the directory containing this README).
+3. Build the Docker image, specifying the Dockerfile path: `docker build -t mg-q-gen -f src/app/Dockerfile .`
 4. Run the Docker container: `docker run -p 8080:8080 mg-q-gen`
 5. Access the application in your browser at `http://localhost:8080`.
 

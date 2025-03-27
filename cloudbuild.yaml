@@ -1,28 +1,37 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA', '.', '-f', 'src/app/Dockerfile' ]
-
+  args:
+  - 'build'
+  - '-t'
+  - '${_GCR_HOSTNAME}/${_PROJECT}/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+  - '.'
+  - '-f'
+  - 'src/app/Dockerfile'
+  id: Build
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA' ]
-
+  args:
+  - 'push'
+  - '${_GCR_HOSTNAME}/${_PROJECT}/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
+  id: Push
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
   args:
   - 'run'
   - 'deploy'
-  - 'mg-questions' # Image name, from the script's $1
+  - '${_IMAGE_NAME}'
   - '--image'
-  - 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA'
+  - '${_GCR_HOSTNAME}/${_PROJECT}/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
   - '--platform'
   - 'managed'
   - '--region'
-  - 'us-central1' # Region, from the script's $2
+  - 'us-central1'
   - '--port'
-  - '8080' # Port from the script
+  - '8080'
   - '--allow-unauthenticated'
+  id: Deploy
 
 images:
-- 'us-central1-docker.pkg.dev/gsd-ai-mx-ulises/cloudrun-images/mg-questions:$COMMIT_SHA'
+- '${_GCR_HOSTNAME}/${_PROJECT}/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
