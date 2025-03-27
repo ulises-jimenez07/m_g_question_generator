@@ -58,15 +58,56 @@ This project utilizes several tools to maintain code quality and consistency. Th
 
 The application is containerized using Docker and deployed to Google Cloud Run.
 
-1. **Containerization (`Dockerfile`):**
-    - The `Dockerfile` uses a slim Python 3.12 base image.
-    - It copies the application code into the container.
-    - It installs the required dependencies from `requirements.txt`.
-    - It exposes port 8080 for the application.
+### Prerequisites for Deployment:
 
-2. **Deployment (`build_deploy.sh`):**
-    - The `build_deploy.sh` script builds the Docker image and pushes it to Google Container Registry.
-    - It then deploys the image to Cloud Run, specifying the region, port, and allowing unauthenticated access.
+Before deploying to Google Cloud Run, ensure the following prerequisites are met:
+
+1.  **Google Cloud Project:** You must have a Google Cloud project set up.
+2.  **Artifact Registry:**
+    *   Create a Docker repository in Google Cloud Artifact Registry to store your Docker images.
+    *   You can create a repository using the gcloud CLI or the Google Cloud Console.
+    *   Example using gcloud CLI:
+        ```bash
+        gcloud artifacts repositories create <REPOSITORY_NAME> \
+        --repository-format=docker \
+        --location=<REGION> \
+        --description="Docker repository for M&G Q-Gen"
+        ```
+        *   Replace `<REPOSITORY_NAME>` with your desired repository name (e.g., `mg-q-gen-repo`).
+        *   Replace `<REGION>` with the region where you want to create the repository (e.g., `us-central1`).
+3.  **Cloud Build API:** Enable the Cloud Build API in your Google Cloud project.
+4. **Cloud Run API:** Enable the Cloud Run API in your Google Cloud project.
+
+### Setting up Cloud Build Trigger:
+
+To automate the deployment process, you need to create a Cloud Build trigger that will automatically build and deploy your application whenever changes are pushed to the main branch.
+
+1.  **Create a Trigger:**
+    *   Go to the Cloud Build Triggers page in the Google Cloud Console.
+    *   Click "Create Trigger."
+    *   Configure the trigger as follows:
+        *   **Name:** Give your trigger a descriptive name (e.g., `deploy-to-cloud-run`).
+        *   **Region:** Select the region where you want to run the build.
+        *   **Event:** Select "Push to a branch."
+        *   **Source:** Choose your repository and select the `main` branch.
+        *   **Configuration:** Select "Cloud Build configuration file (yaml)" and specify the location of your `cloudbuild.yaml` file (e.g., `/cloudbuild.yaml`).
+        * **Substitutions:** Add the following substitution variables:
+            * `_GCR_HOSTNAME`: The hostname of your artifact registry, for example: `us-central1-docker.pkg.dev`
+            * `_PROJECT`: Your project ID.
+            * `_REPOSITORY`: The name of your artifact registry repository.
+            * `_IMAGE_NAME`: The name of the image.
+    *   Click "Create."
+
+2.  **Environment Variables:**
+    *   The `cloudbuild.yaml` file uses substitution variables (e.g., `${_GCR_HOSTNAME}`, `${_PROJECT}`, `${_REPOSITORY}`, `${_IMAGE_NAME}`).
+    *   These variables are defined in the trigger configuration.
+    *   Ensure that the values you set in the trigger match your project's configuration.
+
+### Manual Deployment (`build_deploy.sh`):
+
+-   The `build_deploy.sh` script builds the Docker image and pushes it to Google Container Registry.
+-   It then deploys the image to Cloud Run, specifying the region, port, and allowing unauthenticated access.
+-   The `cloudbuild.yaml` file is used by the Cloud Build trigger to define the build and deployment steps.
 
 
 ## Running Locally:
